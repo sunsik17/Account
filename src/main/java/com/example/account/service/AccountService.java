@@ -37,8 +37,12 @@ public class AccountService {
         validateCreateAccount(accountUser);
 
         String newAccountNumber = accountRepository.findFirstByOrderByIdDesc()
-                .map(account -> (Integer.parseInt(account.getAccountNumber())) + 1 + "")
-                .orElse("1000000000");
+                .map(account -> (createAccountNumber()))
+                .orElse(createAccountNumber());
+
+        if (!validateCreateAccount_AccountNumber(newAccountNumber)){
+            return createAccount(userId, initialBalance);
+        }
 
         return AccountDto.fromEntity(
                 accountRepository.save(Account.builder()
@@ -55,6 +59,10 @@ public class AccountService {
         if (accountRepository.countByAccountUser(accountUser) >= 10) {
             throw new AccountException(MAX_ACCOUNT_PER_USER_10);
         }
+    }
+
+    private boolean validateCreateAccount_AccountNumber (String accountNumber) {
+        return accountRepository.findByAccountNumber(accountNumber).isEmpty();
     }
 
     @Transactional
@@ -109,5 +117,14 @@ public class AccountService {
         AccountUser accountUser = accountUserRepository.findById(userId)
                 .orElseThrow(() -> new AccountException(USER_NOT_FOUND));
         return accountUser;
+    }
+
+    public String createAccountNumber () {
+        StringBuilder accountNum = new StringBuilder();
+        for (int i = 0; i < 10; i++) {
+            String createNum = (int) (Math.random() * 8) + 1 + "";
+            accountNum.append(createNum);
+        }
+        return accountNum.toString();
     }
 }
